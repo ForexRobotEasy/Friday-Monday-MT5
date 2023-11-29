@@ -1,0 +1,87 @@
+mql5
+/*
+Program: Friday Monday MT5
+Developer's Site: forexroboteasy.com
+Development Name: Forex Robot Easy Team
+*/
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <ChartObjects\ChartObjects.mqh>
+
+// Define constants
+#define FRIDAY 5
+#define MONDAY 1
+
+// Initialize global variables
+CTrade trade;
+datetime lastTradeTime;
+
+// Initialize chart objects
+CChartObjectText text;
+
+// Initialize function for opening trades
+void OpenTrade(string symbol, ENUM_ORDER_TYPE orderType, double lotSize, double stopLoss, double takeProfit)
+{
+   trade.BuyStop(symbol, lotSize, NormalizeDouble(stopLoss, Digits), NormalizeDouble(takeProfit, Digits), NULL);
+   trade.SellStop(symbol, lotSize, NormalizeDouble(stopLoss, Digits), NormalizeDouble(takeProfit, Digits), NULL);
+}
+
+// Initialize function for closing trades
+void CloseTrade()
+{
+   trade.CloseAll();
+}
+
+// Initialize function for checking if it is Friday or Monday
+bool IsFridayOrMonday(datetime time)
+{
+   int dayOfWeek = TimeDayOfWeek(time);
+   if (dayOfWeek == FRIDAY || dayOfWeek == MONDAY)
+      return true;
+   return false;
+}
+
+// Initialize function for handling trading events
+void OnTick()
+{
+   datetime currentTime = TimeCurrent();
+
+   // Check if it is Friday or Monday and a new trading session has started
+   if (IsFridayOrMonday(currentTime) && !IsFridayOrMonday(lastTradeTime))
+   {
+      // Close any open trades
+      CloseTrade();
+
+      // Open new trades
+      OpenTrade(Symbol(), ORDER_TYPE_BUY, 0.01, 100, 200);
+      OpenTrade(Symbol(), ORDER_TYPE_SELL, 0.01, 100, 200);
+
+      // Update last trade time
+      lastTradeTime = currentTime;
+
+      // Display a notification on the chart
+      text.Create(0, 'Trading session has started', 0, 0);
+   }
+}
+
+// Initialize function for handling initialization of the EA
+void OnInit()
+{
+   // Set the last trade time to the current time
+   lastTradeTime = TimeCurrent();
+
+   // Set chart properties
+   ChartSetInteger(0, CHART_EVENT_MOUSE_WHEEL, false);
+   ChartSetInteger(0, CHART_EVENT_OBJECT_CLICK, false);
+}
+
+// Initialize function for handling deinitialization of the EA
+void OnDeinit(const int reason)
+{
+   // Close any open trades
+   CloseTrade();
+
+   // Delete chart objects
+   ObjectsDeleteAll(0);
+}
